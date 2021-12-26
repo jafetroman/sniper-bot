@@ -105,3 +105,5 @@ test.env
 
 # TernJS port file
 .tern-port
+
+/envs/main.json

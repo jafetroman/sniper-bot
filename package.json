@@ -1,34 +1,42 @@
 {
-  "name": "sniper-bot",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/jafetroman/sniper-bot.git"
-  },
-  "author": "Jafet Roman",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/jafetroman/sniper-bot/issues"
-  },
-  "homepage": "https://github.com/jafetroman/sniper-bot#readme",
-  "devDependencies": {
-    "@types/command-line-args": "^5.2.0",
-    "@types/lodash": "^4.14.178",
-    "ts-node": "^10.4.0",
-    "tslint-config-airbnb": "^5.11.2",
-    "typescript": "^4.5.4"
-  },
-  "dependencies": {
-    "chalk": "^5.0.0",
-    "command-line-args": "^5.2.0",
-    "dotenv": "^10.0.0",
-    "ethers": "^5.5.2",
-    "lodash": "^4.17.21",
-    "prettier": "^2.5.1"
-  }
+    "name": "sniper-bot",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "channels": "ts-node src/actions/listTelegramChannels.ts"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/jafetroman/sniper-bot.git"
+    },
+    "author": "Jafet Roman",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/jafetroman/sniper-bot/issues"
+    },
+    "homepage": "https://github.com/jafetroman/sniper-bot#readme",
+    "devDependencies": {
+        "@types/command-line-args": "^5.2.0",
+        "@types/lodash": "^4.14.178",
+        "@types/prompts": "^2.0.14",
+        "ts-node": "^10.4.0",
+        "tslint-config-airbnb": "^5.11.2",
+        "typescript": "^4.5.4"
+    },
+    "dependencies": {
+        "chalk": "^5.0.0",
+        "colors": "^1.4.0",
+        "command-line-args": "^5.2.0",
+        "dotenv": "^10.0.0",
+        "ethers": "^5.5.2",
+        "i": "^0.3.7",
+        "lodash": "^4.17.21",
+        "npm": "^8.3.0",
+        "prettier": "^2.5.1",
+        "prompts": "^2.4.2",
+        "rxjs": "^7.4.0",
+        "telegram": "^2.1.0",
+        "web3": "^1.6.1"
+    }
 }
