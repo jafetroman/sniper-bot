@@ -16,7 +16,8 @@
             "skipFiles": ["<node_internals>/**", "node_modules/**"],
             "env": {
               "TS_NODE_PROJECT": "${workspaceFolder}/tsconfig.json"
-            }
+            },
+            "console": "integratedTerminal"
         }
     ]
 }

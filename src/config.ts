@@ -17,11 +17,11 @@ export interface EnvConfig {
 
 export interface ExecutionConfig {
     inToken: string;
-    inTokenDecimals: number;
     outToken?: string;
+    telegramChannel?: string;
+    instaBuy: boolean;
     amountToBuy: number;
     minAmountOut: number;
-    gasLimit: number;
     gasPrice: number;
 }
 

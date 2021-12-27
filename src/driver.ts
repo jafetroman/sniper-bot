@@ -131,6 +131,11 @@ export class Driver {
         return this.tokenSymbolToContract[this.executionConfig.inToken];
     };
 
+    public getTokenContractBySymbol = (symbol: string) => {
+        this.requireExecutionConfig();
+        return this.tokenSymbolToContract[symbol];
+    };
+
     public getOutTokenContract = () => {
         this.requireExecutionConfig();
         return this.outTokenContract;
