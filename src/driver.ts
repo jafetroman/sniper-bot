@@ -2,7 +2,8 @@ import colors from 'colors/safe';
 import { ethers } from 'ethers';
 import { mapKeys, mapValues } from 'lodash';
 import { EnvConfig, ExecutionConfig } from './config';
-import erc20Abi from './erc20Abi';
+import { ERC_20_ABI, FACTORY_ABI, ROUTER_ABI } from './abis';
+import { SwapTester } from './swapTester';
 
 export interface Wallet {
     wallet: ethers.Wallet;
@@ -23,11 +24,12 @@ export class Driver {
     private factoryContract: ethers.Contract;
 
     private tokenSymbolToContract: Record<string, TokenContract>;
+    private tokenAddressToContract: Record<string, TokenContract>;
     private outTokenContract: TokenContract = null!;
 
-    private tokenAddressToContract: Record<string, TokenContract>;
-
     private amountToBuy: ethers.BigNumber = null!;
+
+    private swapTester: SwapTester;
 
     constructor(
         private config: EnvConfig,
@@ -46,25 +48,22 @@ export class Driver {
             this.hdNode.derivePath(`m/44'/60'/0'/0/0`)
         ).connect(this.provider);
 
-        this.routerContract = new ethers.Contract(network.router, [
-            'function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)',
-            'function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)',
-            'function swapExactTokensForTokensSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)',
-            'function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline) external  payable returns (uint[] memory amounts)',
-            'function swapExactETHForTokens( uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)'
-        ]).connect(this.mainWallet);
+        this.routerContract = new ethers.Contract(
+            network.router,
+            ROUTER_ABI
+        ).connect(this.mainWallet);
 
-        this.factoryContract = new ethers.Contract(network.factory, [
-            'event PairCreated(address indexed token0, address indexed token1, address pair, uint)',
-            'function getPair(address tokenA, address tokenB) external view returns (address pair)'
-        ]).connect(this.mainWallet);
+        this.factoryContract = new ethers.Contract(
+            network.factory,
+            FACTORY_ABI
+        ).connect(this.mainWallet);
 
         this.tokenSymbolToContract = mapValues(
             network.tokens,
             (address, symbol) => ({
                 symbol,
                 address,
-                contract: new ethers.Contract(address, erc20Abi).connect(
+                contract: new ethers.Contract(address, ERC_20_ABI).connect(
                     this.mainWallet
                 )
             })
@@ -78,7 +77,7 @@ export class Driver {
         if (executionConfig) {
             this.amountToBuy = ethers.utils.parseUnits(
                 executionConfig.amountToBuy.toFixed(8),
-                executionConfig.inTokenDecimals
+                18
             );
 
             if (executionConfig.outToken) {
@@ -87,11 +86,13 @@ export class Driver {
                     address: executionConfig.outToken,
                     contract: new ethers.Contract(
                         executionConfig.outToken,
-                        erc20Abi
+                        ERC_20_ABI
                     ).connect(this.mainWallet)
                 };
             }
         }
+
+        this.swapTester = new SwapTester(config);
     }
 
     private requireExecutionConfig = () => {
@@ -119,7 +120,7 @@ export class Driver {
         this.outTokenContract = {
             symbol: '',
             address: address,
-            contract: new ethers.Contract(address, erc20Abi).connect(
+            contract: new ethers.Contract(address, ERC_20_ABI).connect(
                 this.mainWallet
             )
         };
@@ -132,7 +133,6 @@ export class Driver {
     };
 
     public getTokenContractBySymbol = (symbol: string) => {
-        this.requireExecutionConfig();
         return this.tokenSymbolToContract[symbol];
     };
 
@@ -194,13 +194,13 @@ export class Driver {
     };
 
     public sendTokens = async (
-        contract: ethers.Contract,
+        tokenContract: TokenContract,
         from: Wallet,
         to: Wallet,
         amount: ethers.BigNumber,
         nonce?: number
     ) => {
-        const transaction = contract
+        const transaction = await tokenContract.contract
             .connect(from.wallet)
             .transfer(to.address, amount, {
                 gasPrice: 5,
@@ -210,15 +210,14 @@ export class Driver {
     };
 
     public sendAllTokens = async (
-        contract: ethers.Contract,
+        tokenContract: TokenContract,
         from: Wallet,
         to: Wallet,
         nonce?: number
     ) => {
-        const balance: ethers.BigNumber = await contract.balanceOf(
-            from.address
-        );
-        const transaction = contract
+        const balance: ethers.BigNumber =
+            await tokenContract.contract.balanceOf(from.address);
+        const transaction = await tokenContract.contract
             .connect(from.wallet)
             .transfer(to.address, balance, {
                 gasPrice: 5,
@@ -255,6 +254,29 @@ export class Driver {
         return amounts[1];
     };
 
+    public isTokenApproved = async (
+        tokenContract: TokenContract,
+        from: Wallet
+    ) => {
+        const allowance: ethers.BigNumber = await tokenContract.contract
+            .connect(from.wallet)
+            .allowance(from.address, this.routerContract.address);
+        return allowance.gt(99999999);
+    };
+
+    public approveTokens = async (
+        tokenContract: TokenContract,
+        from: Wallet
+    ) => {
+        const maxAmount = ethers.BigNumber.from(
+            '115792089237316195423570985008687907853269984665640564039457584007913129639935'
+        );
+        const transaction = await tokenContract.contract
+            .connect(from.wallet)
+            .approve(this.routerContract.address, maxAmount);
+        return transaction.wait();
+    };
+
     public swapTokens = async (
         tokenContract: TokenContract,
         from: Wallet,
@@ -268,7 +290,7 @@ export class Driver {
         );
         const path = this.getPath(tokenContract);
         const gasLimit = path.length > 2 ? '400000' : '200000';
-        const transaction = await this.routerContract
+        const transaction = this.routerContract
             .connect(from.wallet)
             .swapExactTokensForTokens(
                 this.amountToBuy,
@@ -289,17 +311,31 @@ export class Driver {
                 `[${path
                     .map(
                         (address) =>
-                            this.tokenAddressToContract[address] || address
+                            this.tokenAddressToContract[address]?.symbol ||
+                            address
                     )
                     .join(' -> ')}]`
             )}`
         );
-        return transaction.wait();
+        return (await transaction).wait();
     };
 
-    public testTokens = async (
+    public testSwapTokens = async (
         tokenContract: TokenContract,
         from: Wallet,
         outTokenDecimals: number = 18
-    ) => {};
+    ) => {
+        this.requireExecutionConfig();
+        const minAmountOut = ethers.utils.parseUnits(
+            this.executionConfig.minAmountOut.toFixed(8),
+            outTokenDecimals
+        );
+        const path = this.getPath(tokenContract);
+        return this.swapTester.testSwapTokens(
+            this.amountToBuy.toString(),
+            minAmountOut.toString(),
+            path,
+            from.address
+        );
+    };
 }

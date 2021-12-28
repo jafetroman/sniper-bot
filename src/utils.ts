@@ -16,3 +16,7 @@ export const testUntil = (test: () => Promise<any>, ms: number) =>
             }
         }, ms);
     });
+
+export const getExplorerUrl = (receipt: any) => {
+    return `https://www.bscscan.com/tx/${receipt.logs[1].transactionHash}`;
+};

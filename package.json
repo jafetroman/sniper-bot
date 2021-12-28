@@ -4,7 +4,8 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "channels": "ts-node src/actions/listTelegramChannels.ts"
+        "channels": "ts-node src/actions/listTelegramChannels.ts",
+        "test": "ts-node src/actions/test.ts"
     },
     "repository": {
         "type": "git",

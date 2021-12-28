@@ -36,8 +36,11 @@ export class TelegramDriver {
         this.pairRegex3 = new RegExp(pairsList);
     }
 
-    public static create = async (config: EnvConfig) => {
-        const instance = new TelegramDriver(config);
+    public static create = async (
+        config: EnvConfig,
+        executionConfig?: ExecutionConfig
+    ) => {
+        const instance = new TelegramDriver(config, executionConfig);
         await instance.client.start({
             phoneNumber: instance.config.telegram.phoneNumber,
             phoneCode: async () =>
@@ -115,7 +118,7 @@ export class TelegramDriver {
                         return;
                     }
                     const pair = this.getPair(message);
-                    resolve({ address, pair });
+                    resolve({ address, pair: pair === 'BNB' ? 'WBNB' : pair });
                     subscription.unsubscribe();
                 }
             );
