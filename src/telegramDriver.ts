@@ -1,7 +1,7 @@
 import prompts from 'prompts';
-import { filter, map, Subject, subscribeOn, tap } from 'rxjs';
+import { filter, map, Subject } from 'rxjs';
 import { Api, TelegramClient } from 'telegram';
-import { NewMessage, NewMessageEvent } from 'telegram/events';
+import { NewMessage } from 'telegram/events';
 import { StringSession } from 'telegram/sessions';
 import { EnvConfig, ExecutionConfig } from './config';
 
@@ -28,7 +28,9 @@ export class TelegramDriver {
         const possiblePairs = Object.keys(config.network.tokens);
         const pairsList = [
             ...possiblePairs,
-            ...possiblePairs.map((pair) => pair.toLowerCase())
+            'BNB',
+            ...possiblePairs.map((pair) => pair.toLowerCase()),
+            'bnb'
         ].join('|');
 
         this.pairRegex1 = new RegExp(`(${pairsList}) *(?:\\/|\\\\|\\|:)`);
@@ -84,9 +86,15 @@ export class TelegramDriver {
         }
         const channelIdBigInt = BigInt(this.executionConfig.telegramChannel);
         return this.getAllMessages().pipe(
-            filter((message: Api.Message) =>
-                (message.peerId as any)?.chatId?.eq(channelIdBigInt)
-            ),
+            filter((message: Api.Message) => {
+                const isFromChannel = (message.peerId as any)?.chatId?.eq(
+                    channelIdBigInt
+                );
+                if (!isFromChannel) {
+                    console.log('Receive message from another chat');
+                }
+                return isFromChannel;
+            }),
             map((message: Api.Message) => message.message)
         );
     };
@@ -124,4 +132,6 @@ export class TelegramDriver {
             );
         });
     };
+
+    public close = () => this.client.destroy();
 }

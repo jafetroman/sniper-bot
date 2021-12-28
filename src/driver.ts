@@ -203,7 +203,8 @@ export class Driver {
         const transaction = await tokenContract.contract
             .connect(from.wallet)
             .transfer(to.address, amount, {
-                gasPrice: 5,
+                gasPrice: ethers.utils.parseUnits('7', 'gwei'),
+                gasLimit: 100000,
                 nonce
             });
         return transaction.wait();
@@ -220,7 +221,6 @@ export class Driver {
         const transaction = await tokenContract.contract
             .connect(from.wallet)
             .transfer(to.address, balance, {
-                gasPrice: 5,
                 nonce
             });
         return transaction.wait();
@@ -266,14 +266,15 @@ export class Driver {
 
     public approveTokens = async (
         tokenContract: TokenContract,
-        from: Wallet
+        from: Wallet,
+        nonce?: number
     ) => {
         const maxAmount = ethers.BigNumber.from(
             '115792089237316195423570985008687907853269984665640564039457584007913129639935'
         );
         const transaction = await tokenContract.contract
             .connect(from.wallet)
-            .approve(this.routerContract.address, maxAmount);
+            .approve(this.routerContract.address, maxAmount, { nonce });
         return transaction.wait();
     };
 
