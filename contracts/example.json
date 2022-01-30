@@ -1,0 +1,9 @@
+{
+    "inToken": "BUSD",
+    "posiblePairs": ["WBNB", "BUSD", "USDT"],
+    "contract": "0xf8a0bf9cf54bb92f17374d9e9a321e6a111a51bd",
+    "wallets": 2,
+    "amountToBuy": 1,
+    "minAmountOut": 0.05,
+    "enableSellAt": 0.9
+}

@@ -2,8 +2,8 @@ import { ethers } from 'ethers';
 import { getEnvConfig } from '../config';
 import { Driver } from '../driver';
 
-const subWalletsCount = 4;
-const ammount = ethers.utils.parseUnits('5', 18);
+const subWalletsCount = 8;
+const ammount = ethers.utils.parseUnits('732.5', 18);
 const tokenSymbol = 'BUSD';
 
 //TODO only send the difference

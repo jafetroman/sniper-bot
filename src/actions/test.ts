@@ -7,7 +7,7 @@ const executionConfig: ExecutionConfig = {
     inToken: 'BUSD',
     instaBuy: true,
     telegramChannel: '702777548',
-    amountToBuy: 5,
+    amountToBuy: 476,
     minAmountOut: 0.38,
     gasPrice: 5
 };
@@ -38,7 +38,7 @@ const main = async () => {
                     const result = await driver.swapTokens(
                         pairTokenContract,
                         subWallet,
-                        5
+                        50
                     );
                     console.log('Sub wallet ' + i + ' bought!');
                     console.log(getExplorerUrl(result));
@@ -58,7 +58,7 @@ const main = async () => {
                     const result = await driver.swapTokens(
                         pairTokenContract,
                         subWallet,
-                        5
+                        20
                     );
                     console.log('Sub wallet ' + i + ' bought!');
                     console.log(getExplorerUrl(result));

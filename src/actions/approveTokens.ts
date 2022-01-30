@@ -2,8 +2,8 @@ import { ethers } from 'ethers';
 import { getEnvConfig } from '../config';
 import { Driver } from '../driver';
 
-const subWalletsCount = 4;
-const tokenSymbol = 'BUSD';
+const subWalletsCount = 8;
+const tokenSymbol = 'WBNB';
 
 const main = async () => {
     const config = getEnvConfig();

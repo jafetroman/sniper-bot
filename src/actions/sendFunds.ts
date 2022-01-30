@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { getEnvConfig } from '../config';
 import { Driver } from '../driver';
 
-const subWalletsCount = 20;
+const subWalletsCount = 8;
 const ammount = ethers.utils.parseUnits('0.02', 18);
 
 const main = async () => {

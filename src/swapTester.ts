@@ -23,7 +23,7 @@ export class SwapTester {
         minAmountOut: string,
         path: string[],
         from: string
-    ) => {
+    ): Promise<[boolean, any]> => {
         try {
             await this.routerContract.methods
                 .swapExactTokensForTokens(
@@ -34,9 +34,9 @@ export class SwapTester {
                     Date.now() + 1000 * 60 * 5
                 )
                 .call({ from });
-            return true;
-        } catch (err) {
-            return false;
+            return [true, null];
+        } catch (err: any) {
+            return [false, err];
         }
     };
 }

@@ -1,11 +1,19 @@
+import prompts from 'prompts';
+
 export const sleep = (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms));
 
-export const testUntil = (test: () => Promise<any>, ms: number) =>
-    new Promise((resolve) => {
+export const testUntil = <T>(
+    test: (iteration: number, cancel: () => void) => Promise<T>,
+    ms: number
+): Promise<T> => {
+    let count = 0;
+    return new Promise((resolve) => {
+        const cancel = () => resolve(null!);
         const timer = setInterval(async () => {
             try {
-                const result = await test();
+                count++;
+                const result = await test(count, cancel);
                 if (result) {
                     clearInterval(timer);
                     resolve(result);
@@ -16,7 +24,23 @@ export const testUntil = (test: () => Promise<any>, ms: number) =>
             }
         }, ms);
     });
+};
 
 export const getExplorerUrl = (receipt: any) => {
     return `https://www.bscscan.com/tx/${receipt.logs[1].transactionHash}`;
+};
+
+export const waitForSellSignal = async () => {
+    while (true) {
+        const text: string = await prompts({
+            type: 'text',
+            name: 'value',
+            message: 'Type sell:'
+        }).then((answer) => answer.value);
+        if (text.toLowerCase().includes('sell')) {
+            break;
+        } else {
+            console.log('input is not "sell", ignored');
+        }
+    }
 };

@@ -141,12 +141,12 @@ export class Driver {
         return this.outTokenContract;
     };
 
-    public getMainWallet = async () => ({
+    public getMainWallet = async (): Promise<Wallet> => ({
         wallet: this.mainWallet,
         address: await this.mainWallet.getAddress()
     });
 
-    public getSubWallets = (limit: number) => {
+    public getSubWallets = (limit: number): Promise<Wallet[]> => {
         const wallets = Array.from({ length: limit }, (_, i) =>
             new ethers.Wallet(
                 this.hdNode.derivePath(`m/44'/60'/0'/0/${i + 1}`)
@@ -203,7 +203,7 @@ export class Driver {
         const transaction = await tokenContract.contract
             .connect(from.wallet)
             .transfer(to.address, amount, {
-                gasPrice: ethers.utils.parseUnits('7', 'gwei'),
+                gasPrice: ethers.utils.parseUnits('5', 'gwei'),
                 gasLimit: 100000,
                 nonce
             });
@@ -279,7 +279,7 @@ export class Driver {
     };
 
     public swapTokens = async (
-        tokenContract: TokenContract,
+        pairContract: TokenContract,
         from: Wallet,
         gasPrice: number,
         outTokenDecimals: number = 18
@@ -289,7 +289,7 @@ export class Driver {
             this.executionConfig.minAmountOut.toFixed(8),
             outTokenDecimals
         );
-        const path = this.getPath(tokenContract);
+        const path = this.getPath(pairContract);
         const gasLimit = path.length > 2 ? '400000' : '200000';
         const transaction = this.routerContract
             .connect(from.wallet)
@@ -321,6 +321,46 @@ export class Driver {
         return (await transaction).wait();
     };
 
+    public sell = async (
+        pairContract: TokenContract,
+        from: Wallet,
+        gasPrice: number
+    ): Promise<ethers.ContractTransaction> => {
+        this.requireExecutionConfig();
+        const tokenBalance: ethers.BigNumber =
+            await this.outTokenContract.contract.balanceOf(from.address);
+        const path = this.getPath(pairContract).reverse();
+        const gasLimit = path.length > 2 ? '400000' : '200000';
+        const transaction = this.routerContract
+            .connect(from.wallet)
+            .swapExactTokensForTokens(
+                tokenBalance,
+                ethers.utils.parseUnits('0', 18),
+                path,
+                from.address,
+                Date.now() + 1000 * 60 * 5, //5 minutes
+                {
+                    gasLimit,
+                    gasPrice: ethers.utils.parseUnits(
+                        gasPrice.toString(),
+                        'gwei'
+                    )
+                }
+            );
+        console.log(
+            `Selling token using following route: ${colors.yellow(
+                `[${path
+                    .map(
+                        (address) =>
+                            this.tokenAddressToContract[address]?.symbol ||
+                            address
+                    )
+                    .join(' -> ')}]`
+            )}`
+        );
+        return (await transaction).wait();
+    };
+
     public testSwapTokens = async (
         tokenContract: TokenContract,
         from: Wallet,
@@ -335,6 +375,23 @@ export class Driver {
         return this.swapTester.testSwapTokens(
             this.amountToBuy.toString(),
             minAmountOut.toString(),
+            path,
+            from.address
+        );
+    };
+
+    public testSell = async (
+        pairContract: TokenContract,
+        from: Wallet,
+        minAmountOut: number
+    ) => {
+        this.requireExecutionConfig();
+        const tokenBalance: ethers.BigNumber =
+            await this.outTokenContract.contract.balanceOf(from.address);
+        const path = this.getPath(pairContract).reverse();
+        return this.swapTester.testSwapTokens(
+            tokenBalance.toString(),
+            ethers.utils.parseUnits(minAmountOut.toFixed(8), 18).toString(),
             path,
             from.address
         );
